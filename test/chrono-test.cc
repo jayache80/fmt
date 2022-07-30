@@ -629,4 +629,87 @@ TEST(chrono_test, cpp20_duration_subsecond_support) {
             "00.142857");
 }
 
+TEST(chrono_test, glibc_extensions) {
+  // Glibc  provides  some extensions for conversion specifications.  (These extensions are not specified in POSIX.1-2001, but a few other
+  // systems provide similar features.)  Between the '%' character and the conversion specifier character,  an  optional  flag  and  field
+  // width may be specified.  (These precede the E or O modifiers, if present.)
+
+  // The following flag characters are permitted:
+
+  // _      (underscore) Pad a numeric result string with spaces.
+
+  // -      (dash) Do not pad a numeric result string.
+
+  // 0      Pad a numeric result string with zeros even if the conversion specifier character uses space-padding by default.
+
+  // ^      Convert alphabetic characters in result string to uppercase.
+
+  // #      Swap  the  case of the result string.  (This flag works only with certain conversion specifier characters, and of these, it is
+  //        only really useful with %Z.)
+
+  // An optional decimal width specifier may follow the (possibly absent) flag.  If the natural size of the field  is  smaller  than  this
+  // width, then the result string is padded (on the left) to the specified width.
+
+  // Do not pad a numeric result string
+
+  // chrono_formatter, numeric_system::standard
+  auto dur = std::chrono::milliseconds{97445678};
+  auto formatted_dur_pad_12 = fmt::format("{:%I:%M:%S}", dur);
+  auto formatted_dur_no_pad_12 = fmt::format("{:%-I:%-M:%-S}", dur);
+  auto formatted_dur_pad_24 = fmt::format("{:%H:%M:%S}", dur);
+  auto formatted_dur_no_pad_24 = fmt::format("{:%-H:%-M:%-S}", dur);
+  auto expected_pad_12 = "03:04:05.678";
+  auto expected_no_pad_12 = "3:4:5.678";
+  auto expected_pad_24 = expected_pad_12;
+  auto expected_no_pad_24 = expected_no_pad_12;
+  EXPECT_EQ(formatted_dur_pad_12, expected_pad_12);
+  EXPECT_EQ(formatted_dur_no_pad_12, expected_no_pad_12);
+  EXPECT_EQ(formatted_dur_pad_24, expected_pad_24);
+  EXPECT_EQ(formatted_dur_no_pad_24, expected_no_pad_24);
+
+  // chrono_formatter -> tm_writer, numeric_system::alternative
+  formatted_dur_pad_12 = fmt::format("{:%OI:%OM:%OS}", dur);
+  formatted_dur_no_pad_12 = fmt::format("{:%-OI:%-OM:%-OS}", dur);
+  formatted_dur_pad_24 = fmt::format("{:%OH:%M:%OS}", dur);
+  formatted_dur_no_pad_24 = fmt::format("{:%-OH:%-OM:%-OS}", dur);
+  // TODO: %OS causes fractional seconds to be dropped. Is this intended?
+  expected_pad_12 = "03:04:05";
+  expected_no_pad_12 = "3:4:5";
+  expected_pad_24 = expected_pad_12;
+  expected_no_pad_24 = expected_no_pad_12;
+  EXPECT_EQ(formatted_dur_pad_12, expected_pad_12);
+  EXPECT_EQ(formatted_dur_no_pad_12, expected_no_pad_12);
+  EXPECT_EQ(formatted_dur_pad_24, expected_pad_24);
+  EXPECT_EQ(formatted_dur_no_pad_24, expected_no_pad_24);
+
+  // tm_writer, numeric_system::standard
+  std::tm tm = make_tm(1970, 1, 2, 3, 4, 5);
+  auto formatted_tm_pad_12 = fmt::format("{:%I:%M:%S}", tm);
+  auto formatted_tm_no_pad_12 = fmt::format("{:%-I:%-M:%-S}", tm);
+  auto formatted_tm_pad_24 = fmt::format("{:%H:%M:%S}", tm);
+  auto formatted_tm_no_pad_24 = fmt::format("{:%-H:%-M:%-S}", tm);
+  EXPECT_EQ(formatted_tm_pad_12, expected_pad_12);
+  EXPECT_EQ(formatted_tm_no_pad_12, expected_no_pad_12);
+  EXPECT_EQ(formatted_tm_pad_24, expected_pad_24);
+  EXPECT_EQ(formatted_tm_no_pad_24, expected_no_pad_24);
+
+  // tm_writer, numeric_system::alternative (localized)
+  auto loc = get_locale("ja_JP.utf8");
+  if (loc == std::locale::classic()) return;
+  formatted_tm_pad_12 = fmt::format(loc, "{:%OI:%OM:%OS}", tm);
+  formatted_tm_no_pad_12 = fmt::format(loc, "{:%-OI:%-OM:%-OS}", tm);
+  formatted_tm_pad_24 = fmt::format(loc, "{:%OH:%OM:%OS}", tm);
+  formatted_tm_no_pad_24 = fmt::format(loc, "{:%-OH:%-OM:%-OS}", tm);
+  // TODO: For localized, there is no concept of 0-padding so padded and not
+  // padded should be the same. If this is incorrect, please let me know.
+  expected_pad_12 = "三:四:五";
+  expected_no_pad_12 = expected_pad_12;
+  expected_pad_24 = expected_pad_12;
+  expected_no_pad_24 = expected_pad_12;
+  EXPECT_EQ(formatted_tm_pad_12, expected_pad_12);
+  EXPECT_EQ(formatted_tm_no_pad_12, expected_no_pad_12);
+  EXPECT_EQ(formatted_tm_pad_24, expected_pad_24);
+  EXPECT_EQ(formatted_tm_no_pad_24, expected_no_pad_24);
+}
+
 #endif  // FMT_STATIC_THOUSANDS_SEPARATOR
